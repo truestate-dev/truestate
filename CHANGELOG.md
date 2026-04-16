@@ -9,3 +9,14 @@ All notable changes to TrueState are documented here.
 - Initial project scaffold: directory structure, README, CHANGELOG, go.mod, core model
 - Defined core data model: Inventory, Package, Vulnerability, Assertion, Evaluation
 - Added project outline to docs/
+
+### 2026-04-16 (continued)
+
+- Added Go dependencies: chi, pgx/v5, golang-migrate, uuid
+- SQL migrations: inventories, packages, inventory_relations, vulnerabilities, assertions, source_status
+- internal/db: connection, migrations, inventory CRUD, assertion upsert, source status
+- internal/engine: evaluation engine with vulnerability matching and drift detection
+- ingestion/adapters/debian: Debian Security Tracker JSON feed ingestion
+- ingestion/adapters/ubuntu: Ubuntu CVE JSON feed ingestion (paginated)
+- backend/internal/api: chi router with inventory, evaluate, and source endpoints
+- Moved db package to internal/db (shared between backend and ingestion)
