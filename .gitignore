@@ -1,0 +1,26 @@
+# Go binaries
+truestate
+*.exe
+
+# Build artifacts
+dist/
+bin/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# Secrets / runtime config
+*.env
+.env
+/config.local.*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
