@@ -4,6 +4,17 @@ All notable changes to TrueState are documented here.
 
 ## [Unreleased]
 
+### 2026-04-16 (evaluation persistence)
+
+- Migration 002: added `evaluations`, `findings`, and `drift_items` tables
+- `internal/db/evaluation.go`: SaveEvaluation (CopyFrom bulk insert), GetEvaluation, ListEvaluationsForInventory
+- API changes:
+  - `POST /api/v1/evaluate/{id}` — triggers evaluation, persists result, returns 201 + full evaluation
+  - `GET /api/v1/evaluations/{id}` — retrieves a stored evaluation by ID
+  - `GET /api/v1/inventories/{id}/evaluations` — lists all evaluations for an inventory (summary, newest first)
+
+## [v0.1.0] — 2026-04-16
+
 ### 2026-04-16
 
 - Initial project scaffold: directory structure, README, CHANGELOG, go.mod, core model

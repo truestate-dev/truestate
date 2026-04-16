@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS drift_items;
+DROP TABLE IF EXISTS findings;
+DROP TABLE IF EXISTS evaluations;

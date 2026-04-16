@@ -24,9 +24,11 @@ func Router(pool *pgxpool.Pool) http.Handler {
 		r.Get("/inventories", handleListInventories(pool))
 		r.Get("/inventories/{id}", handleGetInventory(pool))
 		r.Post("/inventories/{id}/relation", handleSetRelation(pool))
+		r.Get("/inventories/{id}/evaluations", handleListEvaluations(pool))
 
-		// Evaluation
-		r.Get("/evaluate/{id}", handleEvaluate(pool))
+		// Evaluation — POST triggers + persists; GET retrieves a stored result
+		r.Post("/evaluate/{id}", handleEvaluate(pool))
+		r.Get("/evaluations/{id}", handleGetEvaluation(pool))
 
 		// Sources
 		r.Get("/sources", handleListSources(pool))
@@ -104,7 +106,38 @@ func handleEvaluate(pool *pgxpool.Pool) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "evaluation failed")
 			return
 		}
+		if err := db.SaveEvaluation(r.Context(), pool, eval); err != nil {
+			slog.Error("save evaluation", "id", id, "err", err)
+			writeError(w, http.StatusInternalServerError, "failed to persist evaluation")
+			return
+		}
+		writeJSON(w, http.StatusCreated, eval)
+	}
+}
+
+func handleGetEvaluation(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		eval, err := db.GetEvaluation(r.Context(), pool, id)
+		if err != nil {
+			slog.Error("get evaluation", "id", id, "err", err)
+			writeError(w, http.StatusNotFound, "evaluation not found")
+			return
+		}
 		writeJSON(w, http.StatusOK, eval)
+	}
+}
+
+func handleListEvaluations(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		summaries, err := db.ListEvaluationsForInventory(r.Context(), pool, id)
+		if err != nil {
+			slog.Error("list evaluations", "inventory_id", id, "err", err)
+			writeError(w, http.StatusInternalServerError, "failed to list evaluations")
+			return
+		}
+		writeJSON(w, http.StatusOK, summaries)
 	}
 }
 
