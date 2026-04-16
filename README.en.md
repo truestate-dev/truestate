@@ -75,6 +75,30 @@ NVD_API_KEY=<your-key> go run ./ingestion/cmd/sync -source nvd \
   -db "postgres://truestate:truestate@localhost:5432/truestate?sslmode=disable"
 ```
 
+### Fleet collector
+
+Register all hosts in an SSH fleet at once:
+
+```bash
+eval $(~/bin/load-automation-cert)
+
+# Collect all hosts from the SSH config, then evaluate each
+./ingestion/fleet-collect.sh \
+  --ssh-conf /mnt/skripte/projects/fleet-check/hosts/fleet-ssh.conf \
+  --api http://localhost:8080 \
+  --evaluate
+
+# Target a subset of hosts
+./ingestion/fleet-collect.sh \
+  --hosts pve01,pve02,pve03 \
+  --api http://localhost:8080
+
+# Dry-run to preview
+./ingestion/fleet-collect.sh --dry-run
+```
+
+Runs up to 4 concurrent `collect.sh` jobs (tunable with `--parallel N`).
+
 ### Host collector
 
 Register a host's full package inventory into TrueState via SSH:
@@ -155,6 +179,7 @@ backend/
 ingestion/
   cmd/sync/             — sync worker entrypoint
   collect.sh            — SSH host collector: registers a host's dpkg inventory via API
+  fleet-collect.sh      — parallel fleet collector: runs collect.sh across all SSH conf hosts
   adapters/
     debian/             — Debian Security Tracker JSON feed
     ubuntu/             — Ubuntu OVAL XML bzip2 files (focal/jammy/noble)
@@ -166,6 +191,8 @@ internal/
 ui/
   src/
     api/client.ts       — typed API client
+    components/
+      TrendChart.tsx    — pure SVG evaluation trend chart (no chart library)
     pages/              — InventoryList, InventoryDetail, EvaluationDetail, Sources
 migrations/             — SQL migrations (001 schema, 002 evaluations, 003 cvss)
 docs/                   — design notes and outline

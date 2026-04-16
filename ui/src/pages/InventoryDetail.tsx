@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { api, EvaluationSummary } from '../api/client'
+import TrendChart from '../components/TrendChart'
 
 const PAGE_SIZE = 100
 
@@ -201,6 +202,16 @@ export default function InventoryDetail() {
           )}
         </div>
       </section>
+
+      {/* Trend chart */}
+      {(evals?.length ?? 0) >= 2 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Finding Trend</h2>
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <TrendChart data={evals!} />
+          </div>
+        </section>
+      )}
 
       {/* Evaluation history */}
       <section>

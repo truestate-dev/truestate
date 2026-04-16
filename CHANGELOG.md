@@ -4,6 +4,23 @@ All notable changes to TrueState are documented here.
 
 ## [Unreleased]
 
+### 2026-04-16 (trend chart + fleet collector)
+
+- `ui/src/components/TrendChart.tsx` — pure SVG evaluation trend chart (no chart library)
+  - Two lines: findings (red) + drift items (amber)
+  - Clickable dots navigate to the evaluation detail page
+  - Y-axis grid lines + labels; X-axis date labels (first, middle, last)
+  - Dots colour: green when findings=0, red otherwise
+  - Shown in InventoryDetail when 2+ evaluations exist
+- `ui/src/pages/InventoryDetail.tsx` — "Finding Trend" section added above evaluation history table
+- `ingestion/fleet-collect.sh` — parallel fleet-wide package collector
+  - Parses `Host` aliases from any SSH config file
+  - Calls `collect.sh` for each host (up to `--parallel N` concurrent jobs, default 4)
+  - Accepts `--hosts list,of,aliases` to target a subset
+  - `--evaluate` flag triggers evaluations for all collected inventories immediately after
+  - `--dry-run` prints commands without executing
+  - Prints per-host status and a final summary
+
 ### 2026-04-16 (inventory list stats + delete + pagination)
 
 - `internal/db/inventory.go` — added `InventoryWithStats` struct; `ListInventoriesWithStats` lateral-join query (package count + most-recent evaluation summary per inventory); `DeleteInventory` (cascades to packages, evaluations, findings, drift_items)
