@@ -136,8 +136,8 @@ type Evaluation struct {
 
 // SourceStatus records the health and freshness of a data source.
 type SourceStatus struct {
-	Source      SourceID  `db:"source"       json:"source"`
-	LastSyncAt  time.Time `db:"last_sync_at" json:"last_sync_at"`
-	RecordCount int       `db:"record_count" json:"record_count"`
+	Source      SourceID   `db:"source"       json:"source"`
+	LastSyncAt  *time.Time `db:"last_sync_at" json:"last_sync_at"`
+	RecordCount int        `db:"record_count" json:"record_count"`
 	Error       string    `db:"error"        json:"error,omitempty"`
 }

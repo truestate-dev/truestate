@@ -1,0 +1,24 @@
+# Local development database.
+# Production: PostgreSQL runs on k8s (CNPG or standalone StatefulSet).
+# All config is via env vars — same names work in k8s Secrets/ConfigMaps.
+# Image pulled via Harbor proxy cache (harbor.apps.vjinx.de/dockerhub).
+
+services:
+  db:
+    image: harbor.apps.vjinx.de/dockerhub/library/postgres:16
+    environment:
+      POSTGRES_DB:       truestate
+      POSTGRES_USER:     truestate
+      POSTGRES_PASSWORD: truestate
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U truestate -d truestate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

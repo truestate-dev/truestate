@@ -20,3 +20,9 @@ All notable changes to TrueState are documented here.
 - ingestion/adapters/ubuntu: Ubuntu CVE JSON feed ingestion (paginated)
 - backend/internal/api: chi router with inventory, evaluate, and source endpoints
 - Moved db package to internal/db (shared between backend and ingestion)
+
+### 2026-04-16 (fixes)
+
+- Fixed NULL scan panic: SourceStatus.LastSyncAt changed to *time.Time
+- Fixed NOT NULL violation: nil Metadata map defaulted to empty map on inventory insert
+- End-to-end test passed: inventory creation, relations, evaluate endpoint, drift detection

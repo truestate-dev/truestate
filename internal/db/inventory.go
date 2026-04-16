@@ -19,6 +19,9 @@ func CreateInventory(ctx context.Context, pool *pgxpool.Pool, inv *model.Invento
 	defer tx.Rollback(ctx)
 
 	inv.ID = uuid.New().String()
+	if inv.Metadata == nil {
+		inv.Metadata = map[string]string{}
+	}
 	_, err = tx.Exec(ctx, `
 		INSERT INTO inventories (id, name, type, platform, release, metadata)
 		VALUES ($1, $2, $3, $4, $5, $6)`,
