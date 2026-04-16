@@ -70,6 +70,31 @@ go run ./ingestion/cmd/sync -source debian
 go run ./ingestion/cmd/sync -source ubuntu
 ```
 
+### Host collector
+
+Register a host's full package inventory into TrueState via SSH:
+
+```bash
+# Load automation cert first
+eval $(~/bin/load-automation-cert)
+
+# Register a host
+./ingestion/collect.sh --host automation --api http://localhost:8080
+
+# Register a golden image baseline
+./ingestion/collect.sh --host ubuntu-golden --type golden --name ubuntu-24.04-golden
+
+# Dry-run (print payload, no POST)
+./ingestion/collect.sh --host automation --dry-run
+
+# Use a custom SSH config (e.g. fleet-check conf)
+./ingestion/collect.sh --host pve01 \
+  --ssh-conf /mnt/skripte/projects/fleet-check/hosts/fleet-ssh.conf
+```
+
+`collect.sh` reads `/etc/os-release` to auto-detect platform/release, then collects all
+installed packages via `dpkg-query -W` (name + version + arch).
+
 ### UI (development)
 
 > **Note — CIFS/NFS mount:** `npm install` creates symlinks in `node_modules/` that fail on CIFS or
@@ -124,6 +149,7 @@ backend/
   internal/api/         — HTTP handlers and routing
 ingestion/
   cmd/sync/             — sync worker entrypoint
+  collect.sh            — SSH host collector: registers a host's dpkg inventory via API
   adapters/
     debian/             — Debian Security Tracker JSON feed
     ubuntu/             — Ubuntu OVAL XML bzip2 files (focal/jammy/noble)

@@ -4,6 +4,27 @@ All notable changes to TrueState are documented here.
 
 ## [Unreleased]
 
+### 2026-04-16 (host collector)
+
+- `ingestion/collect.sh` — SSH-based host package collector
+  - Accepts `--host`, `--name`, `--type` (host|golden), `--api`, `--ssh-conf`, `--dry-run`
+  - Reads `/etc/os-release` to detect platform (debian/ubuntu/proxmox) and release codename
+  - Collects all installed packages via `dpkg-query -W` (name + version + arch)
+  - POSTs JSON payload to `POST /api/v1/inventories`
+  - Uses `~/.ssh/svc-automation.conf` by default; compatible with fleet-check SSH conf files
+
+### 2026-04-16 (UI skeleton)
+
+- `ui/` — React 19 + TypeScript + Tailwind CSS 4 + Vite 8 frontend
+  - Typed API client (`src/api/client.ts`) matching all Go model types
+  - **InventoryList** — table of all inventories with platform/release/type badges
+  - **InventoryDetail** — packages table, evaluation history, "Run Evaluation" button
+  - **EvaluationDetail** — summary cards, findings table (pkg/version/CVE/status/fix-version/source, drift flag), drift panel
+  - **Sources** — sync status with health indicator per source
+  - `/api` proxied to `:8080` in dev; production build outputs to `dist/`
+- `ui/.gitignore` excludes `node_modules/` and `dist/`
+- Note: run `npm install` in a local directory (CIFS mount doesn't support symlinks); source files committed to repo
+
 ### 2026-04-16 (evaluation persistence)
 
 - Migration 002: added `evaluations`, `findings`, and `drift_items` tables
