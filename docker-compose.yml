@@ -1,7 +1,12 @@
-# Local development database.
-# Production: PostgreSQL runs on k8s (CNPG or standalone StatefulSet).
-# All config is via env vars — same names work in k8s Secrets/ConfigMaps.
-# Image pulled via Harbor proxy cache (harbor.apps.vjinx.de/dockerhub).
+# TrueState — 3-tier application stack.
+# Images pulled via Harbor proxy cache (harbor.apps.vjinx.de/dockerhub).
+#
+# Start:   docker compose up -d
+# Rebuild: docker compose up -d --build
+# Logs:    docker compose logs -f api
+#
+# UI:  http://localhost:3000
+# API: http://localhost:8080/api/v1
 
 services:
   db:
@@ -19,6 +24,34 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL:    postgres://truestate:truestate@db:5432/truestate?sslmode=disable
+      MIGRATIONS_PATH: /migrations
+      LISTEN_ADDR:     :8080
+      LOG_LEVEL:       info
+    volumes:
+      - ./migrations:/migrations:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   db_data:
