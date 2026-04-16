@@ -4,6 +4,16 @@ All notable changes to TrueState are documented here.
 
 ## [Unreleased]
 
+### 2026-04-16 (fixable findings + CVSS enrichment end-to-end)
+
+- `internal/db/evaluation.go` — `GetEvaluation`: JOIN vulnerabilities table to return live CVSS score + severity per finding (no migration needed; always reflects current NVD sync state)
+- `internal/db/evaluation.go` — `EvaluationSummary` + `ListEvaluationsForInventory`: add `fixable_count` (findings with `status='fixed'` — upgrade available)
+- `internal/db/inventory.go` — `InventoryWithStats` + `ListInventoriesWithStats`: add `last_fixable_count` to inventory list stats
+- `ui/src/api/client.ts` — add `fixable_count` to `EvaluationSummary`, `last_fixable_count` to `InventoryWithStats`
+- `ui/src/pages/EvaluationDetail.tsx` — add "Fixable" summary card; clicking it activates the `fixed` status filter
+- `ui/src/pages/InventoryList.tsx` — show `N fix` badge alongside total findings when fixable > 0
+- `ui/src/pages/InventoryDetail.tsx` — add Fixable column to evaluation history table
+
 ### 2026-04-16 (trend chart + fleet collector)
 
 - `ui/src/components/TrendChart.tsx` — pure SVG evaluation trend chart (no chart library)
@@ -140,3 +150,18 @@ All notable changes to TrueState are documented here.
   space-separated line after "following package versions:"; regex now parses correctly
 - Added DISTINCT ON deduplication in bulk upsert SQL to handle same package/CVE appearing
   in multiple USN definitions (ESM vs main channel variants)
+
+### 2026-04-16 (NVD adapter hardening)
+
+- `ingestion/adapters/nvd/nvd.go` — retry on HTTP 503 (NVD service unavailable) alongside existing 429/403 backoff; reduced page size 2000→500 for faster per-request response times; increased HTTP client timeout 30s→120s
+
+### 2026-04-16 (containerisation)
+
+- `backend/Dockerfile` — multi-stage build: Go 1.25 bookworm builder → debian:bookworm-slim runtime; CGO disabled, trimpath + stripped binary
+- `ui/Dockerfile` — multi-stage build: node:20-alpine npm ci + build → nginx:alpine serving dist/
+- `ui/nginx.conf` — nginx config: proxies `/api/` to `http://api:8080`, SPA fallback for all other routes
+- `docker-compose.yml` — extended from DB-only to full 3-tier stack: `db` (postgres:16), `api` (build from backend/Dockerfile, migrations mounted read-only), `ui` (build from ui/Dockerfile); UI on :3000, API on :8080, DB on :5432
+
+### 2026-04-16 (add package-lock.json)
+
+- `ui/package-lock.json` — committed lockfile (generated from `~/.local/truestate-ui/`); required for `npm ci` in Docker build

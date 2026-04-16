@@ -15,6 +15,11 @@ function EvalRow({ ev }: { ev: EvaluationSummary }) {
         {new Date(ev.evaluated_at).toLocaleString()}
       </td>
       <td className={`px-4 py-3 text-sm ${findingColor}`}>{ev.finding_count}</td>
+      <td className="px-4 py-3 text-sm">
+        {ev.fixable_count > 0
+          ? <span className="text-amber-600 font-medium">{ev.fixable_count}</span>
+          : <span className="text-slate-300">—</span>}
+      </td>
       <td className="px-4 py-3 text-sm text-slate-600">{ev.drift_count}</td>
       <td className="px-4 py-3">
         <Link to={`/evaluations/${ev.id}`} className="text-blue-600 hover:underline text-sm">
@@ -220,7 +225,7 @@ export default function InventoryDetail() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                {['Evaluated At', 'Findings', 'Drift Items', ''].map((h) => (
+                {['Evaluated At', 'Findings', 'Fixable', 'Drift Items', ''].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>

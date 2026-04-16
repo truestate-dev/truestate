@@ -62,6 +62,7 @@ export interface EvaluationSummary {
   inventory_id: string
   golden_inventory_id?: string
   finding_count: number
+  fixable_count: number
   drift_count: number
   evaluated_at: string
 }
@@ -71,6 +72,7 @@ export interface InventoryWithStats extends Inventory {
   last_eval_id?: string
   last_evaluated_at?: string
   last_finding_count: number
+  last_fixable_count: number
   last_drift_count: number
 }
 

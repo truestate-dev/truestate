@@ -106,10 +106,14 @@ func GetEvaluation(ctx context.Context, pool *pgxpool.Pool, id string) (*model.E
 	}
 
 	rows, err := pool.Query(ctx, `
-		SELECT inventory_id, package_name, version, cve_id, status,
-		       fixed_version, source, fetched_at, drift_related
-		FROM findings WHERE evaluation_id = $1
-		ORDER BY package_name, cve_id`, id)
+		SELECT f.inventory_id, f.package_name, f.version, f.cve_id, f.status,
+		       f.fixed_version, f.source, f.fetched_at, f.drift_related,
+		       COALESCE(v.cvss_score, 0)     AS cvss_score,
+		       COALESCE(v.cvss_severity, '') AS cvss_severity
+		FROM findings f
+		LEFT JOIN vulnerabilities v ON v.cve_id = f.cve_id
+		WHERE f.evaluation_id = $1
+		ORDER BY f.package_name, f.cve_id`, id)
 	if err != nil {
 		return nil, fmt.Errorf("get evaluation: query findings: %w", err)
 	}
@@ -117,7 +121,8 @@ func GetEvaluation(ctx context.Context, pool *pgxpool.Pool, id string) (*model.E
 	for rows.Next() {
 		var f model.Finding
 		if err := rows.Scan(&f.InventoryID, &f.PackageName, &f.Version, &f.CVEID,
-			&f.Status, &f.FixedVersion, &f.Source, &f.FetchedAt, &f.DriftRelated); err != nil {
+			&f.Status, &f.FixedVersion, &f.Source, &f.FetchedAt, &f.DriftRelated,
+			&f.CVSSScore, &f.CVSSSeverity); err != nil {
 			return nil, fmt.Errorf("get evaluation: scan finding: %w", err)
 		}
 		eval.Findings = append(eval.Findings, f)
@@ -150,6 +155,7 @@ type EvaluationSummary struct {
 	InventoryID       string    `json:"inventory_id"`
 	GoldenInventoryID string    `json:"golden_inventory_id,omitempty"`
 	FindingCount      int       `json:"finding_count"`
+	FixableCount      int       `json:"fixable_count"`
 	DriftCount        int       `json:"drift_count"`
 	EvaluatedAt       time.Time `json:"evaluated_at"`
 }
@@ -162,11 +168,12 @@ func ListEvaluationsForInventory(ctx context.Context, pool *pgxpool.Pool, invent
 			e.id,
 			e.inventory_id,
 			COALESCE(e.golden_inventory_id::text, ''),
-			COUNT(DISTINCT f.id)  AS finding_count,
-			COUNT(DISTINCT d.id)  AS drift_count,
+			COUNT(DISTINCT f.id)                                           AS finding_count,
+			COUNT(DISTINCT CASE WHEN f.status = 'fixed' THEN f.id END)    AS fixable_count,
+			COUNT(DISTINCT d.id)                                           AS drift_count,
 			e.evaluated_at
 		FROM evaluations e
-		LEFT JOIN findings   f ON f.evaluation_id = e.id
+		LEFT JOIN findings    f ON f.evaluation_id = e.id
 		LEFT JOIN drift_items d ON d.evaluation_id = e.id
 		WHERE e.inventory_id = $1
 		GROUP BY e.id
@@ -180,7 +187,7 @@ func ListEvaluationsForInventory(ctx context.Context, pool *pgxpool.Pool, invent
 	for rows.Next() {
 		var s EvaluationSummary
 		if err := rows.Scan(&s.ID, &s.InventoryID, &s.GoldenInventoryID,
-			&s.FindingCount, &s.DriftCount, &s.EvaluatedAt); err != nil {
+			&s.FindingCount, &s.FixableCount, &s.DriftCount, &s.EvaluatedAt); err != nil {
 			return nil, fmt.Errorf("list evaluations: scan: %w", err)
 		}
 		out = append(out, s)

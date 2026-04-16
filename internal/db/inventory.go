@@ -18,6 +18,7 @@ type InventoryWithStats struct {
 	LastEvalID        string     `json:"last_eval_id,omitempty"`
 	LastEvaluatedAt   *time.Time `json:"last_evaluated_at,omitempty"`
 	LastFindingCount  int        `json:"last_finding_count"`
+	LastFixableCount  int        `json:"last_fixable_count"`
 	LastDriftCount    int        `json:"last_drift_count"`
 }
 
@@ -143,17 +144,19 @@ func ListInventoriesWithStats(ctx context.Context, pool *pgxpool.Pool) ([]Invent
 		SELECT
 			i.id, i.name, i.type, i.platform, i.release, i.metadata,
 			i.created_at, i.updated_at,
-			COUNT(DISTINCT p.id)   AS package_count,
-			e.id                   AS last_eval_id,
-			e.evaluated_at         AS last_evaluated_at,
-			COALESCE(e.finding_count, 0) AS last_finding_count,
-			COALESCE(e.drift_count, 0)   AS last_drift_count
+			COUNT(DISTINCT p.id)                       AS package_count,
+			e.id                                       AS last_eval_id,
+			e.evaluated_at                             AS last_evaluated_at,
+			COALESCE(e.finding_count, 0)               AS last_finding_count,
+			COALESCE(e.fixable_count, 0)               AS last_fixable_count,
+			COALESCE(e.drift_count, 0)                 AS last_drift_count
 		FROM inventories i
 		LEFT JOIN packages p ON p.inventory_id = i.id
 		LEFT JOIN LATERAL (
 			SELECT ev.id, ev.evaluated_at,
-			       COUNT(DISTINCT f.id) AS finding_count,
-			       COUNT(DISTINCT d.id) AS drift_count
+			       COUNT(DISTINCT f.id)                                        AS finding_count,
+			       COUNT(DISTINCT CASE WHEN f.status = 'fixed' THEN f.id END) AS fixable_count,
+			       COUNT(DISTINCT d.id)                                        AS drift_count
 			FROM evaluations ev
 			LEFT JOIN findings    f ON f.evaluation_id = ev.id
 			LEFT JOIN drift_items d ON d.evaluation_id = ev.id
@@ -162,7 +165,7 @@ func ListInventoriesWithStats(ctx context.Context, pool *pgxpool.Pool) ([]Invent
 			ORDER BY ev.evaluated_at DESC
 			LIMIT 1
 		) e ON true
-		GROUP BY i.id, e.id, e.evaluated_at, e.finding_count, e.drift_count
+		GROUP BY i.id, e.id, e.evaluated_at, e.finding_count, e.fixable_count, e.drift_count
 		ORDER BY i.created_at DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("list inventories with stats: %w", err)
@@ -178,7 +181,7 @@ func ListInventoriesWithStats(ctx context.Context, pool *pgxpool.Pool) ([]Invent
 			&s.CreatedAt, &s.UpdatedAt,
 			&s.PackageCount,
 			&lastEvalID, &s.LastEvaluatedAt,
-			&s.LastFindingCount, &s.LastDriftCount,
+			&s.LastFindingCount, &s.LastFixableCount, &s.LastDriftCount,
 		); err != nil {
 			return nil, fmt.Errorf("list inventories with stats: scan: %w", err)
 		}

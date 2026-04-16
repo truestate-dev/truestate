@@ -176,6 +176,7 @@ export default function EvaluationDetail() {
   const allFindings = sortedFindings
   const drift = ev.drift_items ?? []
   const driftRelated = allFindings.filter((f) => f.drift_related).length
+  const fixable = allFindings.filter((f) => f.status === 'fixed').length
   const critical = allFindings.filter((f) => f.cvss_severity === 'CRITICAL').length
   const high = allFindings.filter((f) => f.cvss_severity === 'HIGH').length
 
@@ -214,12 +215,22 @@ export default function EvaluationDetail() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div className="bg-white rounded-lg border border-slate-200 p-4">
           <div className={`text-3xl font-bold ${allFindings.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
             {allFindings.length}
           </div>
           <div className="text-slate-500 text-sm mt-1">Total Findings</div>
+        </div>
+        <div
+          className="bg-white rounded-lg border border-slate-200 p-4 cursor-pointer hover:border-amber-400 transition-colors"
+          title="Upgrade available — click to filter"
+          onClick={() => { toggleStatus('fixed'); window.scrollBy(0, 200) }}
+        >
+          <div className={`text-3xl font-bold ${fixable > 0 ? 'text-amber-600' : 'text-slate-300'}`}>
+            {fixable}
+          </div>
+          <div className="text-slate-500 text-sm mt-1">Fixable</div>
         </div>
         <div className="bg-white rounded-lg border border-slate-200 p-4">
           <div className={`text-3xl font-bold ${critical > 0 ? 'text-red-700' : 'text-slate-300'}`}>

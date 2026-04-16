@@ -21,14 +21,19 @@ function Badge({ label, cls }: { label: string; cls: string }) {
   )
 }
 
-function FindingBadge({ count, evalId }: { count: number; evalId?: string }) {
+function FindingBadge({ count, fixable, evalId }: { count: number; fixable: number; evalId?: string }) {
   if (!evalId) return <span className="text-slate-300 text-xs">—</span>
   const cls = count === 0
     ? 'text-green-600 font-medium'
     : count >= 10 ? 'text-red-600 font-semibold' : 'text-amber-600 font-medium'
   return (
-    <Link to={`/evaluations/${evalId}`} className={`text-xs hover:underline ${cls}`}>
-      {count}
+    <Link to={`/evaluations/${evalId}`} className="text-xs hover:underline flex items-center gap-1.5">
+      <span className={cls}>{count}</span>
+      {fixable > 0 && (
+        <span className="text-amber-500 font-medium" title={`${fixable} fixable (upgrade available)`}>
+          {fixable} fix
+        </span>
+      )}
     </Link>
   )
 }
@@ -52,7 +57,7 @@ function Row({ inv }: { inv: InventoryWithStats }) {
         {inv.package_count.toLocaleString()}
       </td>
       <td className="px-4 py-3">
-        <FindingBadge count={inv.last_finding_count} evalId={inv.last_eval_id} />
+        <FindingBadge count={inv.last_finding_count} fixable={inv.last_fixable_count} evalId={inv.last_eval_id} />
       </td>
       <td className="px-4 py-3 text-slate-400 text-xs">
         {inv.last_evaluated_at
