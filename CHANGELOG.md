@@ -4,6 +4,23 @@ All notable changes to TrueState are documented here.
 
 ## [Unreleased]
 
+### 2026-04-16 (CVSS severity enrichment)
+
+- Migration 003: added `cvss_score FLOAT`, `cvss_severity TEXT`, `cvss_vector TEXT` to `vulnerabilities`; added `nvd` source_status row
+- `ingestion/adapters/nvd/nvd.go` — NVD API 2.0 paginated adapter
+  - Fetches all CVEs (2000/page), extracts best CVSS score (v3.1 > v3.0 > v2)
+  - Rate limiting: 6.2s/req without key, 0.7s/req with `NVD_API_KEY` env var
+  - Backoff on 429/403 (35s retry)
+  - Progress logged every 10 pages
+- `internal/db/vulnerability.go` — new file
+  - `BulkUpdateVulnerabilityCVSS`: temp table + CopyFrom + single UPDATE for efficiency
+  - `GetCVSSForCVEs`: batch lookup by CVE ID array for engine enrichment
+- `internal/model/model.go` — added `CVSSScore`, `CVSSSeverity`, `CVSSVector` to `Vulnerability`; `CVSSScore`, `CVSSSeverity` to `Finding`; `SourceNVD` constant
+- `internal/engine/engine.go` — after building findings, batch-enriches CVSS scores via single DB query
+- `ingestion/cmd/sync/main.go` — added `-source nvd` and `syncNVD()` function
+- `ui/src/api/client.ts` — added `CVSSSeverity` type, `cvss_score` and `cvss_severity` fields to `Finding`
+- `ui/src/pages/EvaluationDetail.tsx` — severity badge (CRITICAL/HIGH/MEDIUM/LOW with score), findings sorted by severity descending, 4-card summary (total/critical/high/drift), drift-related count in section header
+
 ### 2026-04-16 (host collector)
 
 - `ingestion/collect.sh` — SSH-based host package collector

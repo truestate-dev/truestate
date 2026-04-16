@@ -11,12 +11,13 @@ import (
 
 	"gitea.local.vjinx.de/truestate/truestate/internal/db"
 	"gitea.local.vjinx.de/truestate/truestate/ingestion/adapters/debian"
+	"gitea.local.vjinx.de/truestate/truestate/ingestion/adapters/nvd"
 	"gitea.local.vjinx.de/truestate/truestate/ingestion/adapters/ubuntu"
 	"gitea.local.vjinx.de/truestate/truestate/internal/model"
 )
 
 func main() {
-	source := flag.String("source", "all", "Source to sync: all|debian|ubuntu")
+	source := flag.String("source", "all", "Source to sync: all|debian|ubuntu|nvd")
 	dsn := flag.String("db",
 		getenv("DATABASE_URL", "postgres://truestate:truestate@localhost:5432/truestate?sslmode=disable"),
 		"PostgreSQL DSN")
@@ -39,6 +40,11 @@ func main() {
 	if *source == "all" || *source == "ubuntu" {
 		if err := syncUbuntu(ctx, pool); err != nil {
 			slog.Error("ubuntu sync failed", "err", err)
+		}
+	}
+	if *source == "all" || *source == "nvd" {
+		if err := syncNVD(ctx, pool); err != nil {
+			slog.Error("nvd sync failed", "err", err)
 		}
 	}
 }
@@ -86,6 +92,25 @@ func syncUbuntu(ctx context.Context, pool *pgxpool.Pool) error {
 	return db.UpdateSourceStatus(ctx, pool, model.SourceStatus{
 		Source:      model.SourceUbuntu,
 		RecordCount: len(result.Assertions),
+	})
+}
+
+func syncNVD(ctx context.Context, pool *pgxpool.Pool) error {
+	records, err := nvd.Fetch(ctx)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("nvd: updating vulnerabilities with CVSS scores", "count", len(records))
+	updated, err := db.BulkUpdateVulnerabilityCVSS(ctx, pool, records)
+	if err != nil {
+		return fmt.Errorf("nvd: bulk update cvss: %w", err)
+	}
+
+	slog.Info("nvd: sync complete", "cvss_records_fetched", len(records), "vulnerabilities_updated", updated)
+	return db.UpdateSourceStatus(ctx, pool, model.SourceStatus{
+		Source:      model.SourceNVD,
+		RecordCount: int(updated),
 	})
 }
 

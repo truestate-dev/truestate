@@ -4,7 +4,8 @@ export type Platform = 'debian' | 'ubuntu' | 'proxmox'
 export type InventoryType = 'host' | 'golden'
 export type AssertionStatus = 'affected' | 'fixed' | 'not_affected' | 'under_review'
 export type DriftKind = 'missing_package' | 'extra_package' | 'version_mismatch'
-export type SourceID = 'cve.org' | 'debian_tracker' | 'ubuntu_tracker' | 'proxmox' | 'bsi'
+export type SourceID = 'cve.org' | 'debian_tracker' | 'ubuntu_tracker' | 'proxmox' | 'bsi' | 'nvd'
+export type CVSSSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE' | ''
 
 export interface Inventory {
   id: string
@@ -36,6 +37,8 @@ export interface Finding {
   source: SourceID
   fetched_at: string
   drift_related: boolean
+  cvss_score?: number
+  cvss_severity?: CVSSSeverity
 }
 
 export interface DriftItem {

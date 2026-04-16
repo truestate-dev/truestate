@@ -48,6 +48,7 @@ const (
 	SourceUbuntu  SourceID = "ubuntu_tracker"
 	SourceProxmox SourceID = "proxmox"
 	SourceBSI     SourceID = "bsi"
+	SourceNVD     SourceID = "nvd"
 )
 
 // Inventory is a package + platform snapshot for a host or golden image.
@@ -80,11 +81,14 @@ type InventoryRelation struct {
 
 // Vulnerability represents a CVE record from the canonical source.
 type Vulnerability struct {
-	CVEID       string    `db:"cve_id"      json:"cve_id"`
-	Summary     string    `db:"summary"     json:"summary"`
-	PublishedAt time.Time `db:"published_at" json:"published_at"`
-	UpdatedAt   time.Time `db:"updated_at"  json:"updated_at"`
-	References  []string  `db:"-"           json:"references,omitempty"`
+	CVEID        string    `db:"cve_id"        json:"cve_id"`
+	Summary      string    `db:"summary"       json:"summary"`
+	PublishedAt  time.Time `db:"published_at"  json:"published_at"`
+	UpdatedAt    time.Time `db:"updated_at"    json:"updated_at"`
+	References   []string  `db:"-"             json:"references,omitempty"`
+	CVSSScore    float64   `db:"cvss_score"    json:"cvss_score,omitempty"`
+	CVSSSeverity string    `db:"cvss_severity" json:"cvss_severity,omitempty"`
+	CVSSVector   string    `db:"cvss_vector"   json:"cvss_vector,omitempty"`
 }
 
 // Assertion is what a specific source says about a package+CVE pair
@@ -114,6 +118,8 @@ type Finding struct {
 	FetchedAt    time.Time       `json:"fetched_at"`
 	AdvisoryRefs []string        `json:"advisory_refs,omitempty"`
 	DriftRelated bool            `json:"drift_related"`
+	CVSSScore    float64         `json:"cvss_score,omitempty"`
+	CVSSSeverity string          `json:"cvss_severity,omitempty"`
 }
 
 // DriftItem describes one deviation between a host and its golden inventory.

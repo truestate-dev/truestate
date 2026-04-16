@@ -78,6 +78,28 @@ func Evaluate(ctx context.Context, pool *pgxpool.Pool, inventoryID string) (*mod
 		}
 	}
 
+	// Enrich findings with CVSS scores in a single batch query.
+	if len(eval.Findings) > 0 {
+		cveIDs := make([]string, 0, len(eval.Findings))
+		seen := map[string]bool{}
+		for _, f := range eval.Findings {
+			if !seen[f.CVEID] {
+				cveIDs = append(cveIDs, f.CVEID)
+				seen[f.CVEID] = true
+			}
+		}
+		cvssMap, err := db.GetCVSSForCVEs(ctx, pool, cveIDs)
+		if err != nil {
+			return nil, fmt.Errorf("evaluate: get cvss: %w", err)
+		}
+		for i := range eval.Findings {
+			if rec, ok := cvssMap[eval.Findings[i].CVEID]; ok {
+				eval.Findings[i].CVSSScore = rec.Score
+				eval.Findings[i].CVSSSeverity = rec.Severity
+			}
+		}
+	}
+
 	return eval, nil
 }
 

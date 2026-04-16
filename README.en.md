@@ -61,13 +61,18 @@ The server applies migrations on startup. API available at `http://localhost:808
 ### Ingestion sync
 
 ```bash
-# Sync all sources (Debian + Ubuntu)
+# Sync all sources (Debian + Ubuntu + NVD CVSS)
 go run ./ingestion/cmd/sync -source all \
   -db "postgres://truestate:truestate@localhost:5432/truestate?sslmode=disable"
 
 # Sync a single source
 go run ./ingestion/cmd/sync -source debian
 go run ./ingestion/cmd/sync -source ubuntu
+
+# Enrich CVSS scores from NVD (run after debian/ubuntu to populate vulnerabilities first)
+# Optional: set NVD_API_KEY for 10x faster sync (~100 req/min vs ~10 req/min)
+NVD_API_KEY=<your-key> go run ./ingestion/cmd/sync -source nvd \
+  -db "postgres://truestate:truestate@localhost:5432/truestate?sslmode=disable"
 ```
 
 ### Host collector
@@ -153,15 +158,16 @@ ingestion/
   adapters/
     debian/             — Debian Security Tracker JSON feed
     ubuntu/             — Ubuntu OVAL XML bzip2 files (focal/jammy/noble)
+    nvd/                — NVD API 2.0 CVSS enrichment (v3.1 > v3.0 > v2)
 internal/
-  model/                — shared domain types
-  engine/               — evaluation engine + dpkg version comparison
+  model/                — shared domain types (includes CVSS fields on Vulnerability + Finding)
+  engine/               — evaluation engine + dpkg version comparison + CVSS enrichment
   db/                   — database layer (shared by backend + ingestion)
 ui/
   src/
     api/client.ts       — typed API client
     pages/              — InventoryList, InventoryDetail, EvaluationDetail, Sources
-migrations/             — SQL migrations (001 schema, 002 evaluations)
+migrations/             — SQL migrations (001 schema, 002 evaluations, 003 cvss)
 docs/                   — design notes and outline
 ```
 
@@ -181,6 +187,7 @@ docs/                   — design notes and outline
 |---|---|---|
 | Debian Security Tracker | JSON (`security-tracker.debian.org`) | ~247k assertions |
 | Ubuntu OVAL | bzip2 XML per release | ~6.25M assertions (focal/jammy/noble) |
+| NVD | REST API 2.0 (`services.nvd.nist.gov`) | CVSS v3.1/v3.0/v2 scores for all CVEs |
 
 ## License
 
