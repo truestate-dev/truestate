@@ -23,6 +23,7 @@ func Router(pool *pgxpool.Pool) http.Handler {
 		r.Post("/inventories", handleCreateInventory(pool))
 		r.Get("/inventories", handleListInventories(pool))
 		r.Get("/inventories/{id}", handleGetInventory(pool))
+		r.Delete("/inventories/{id}", handleDeleteInventory(pool))
 		r.Post("/inventories/{id}/relation", handleSetRelation(pool))
 		r.Get("/inventories/{id}/evaluations", handleListEvaluations(pool))
 
@@ -55,13 +56,25 @@ func handleCreateInventory(pool *pgxpool.Pool) http.HandlerFunc {
 
 func handleListInventories(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		invs, err := db.ListInventories(r.Context(), pool)
+		invs, err := db.ListInventoriesWithStats(r.Context(), pool)
 		if err != nil {
 			slog.Error("list inventories", "err", err)
 			writeError(w, http.StatusInternalServerError, "failed to list inventories")
 			return
 		}
 		writeJSON(w, http.StatusOK, invs)
+	}
+}
+
+func handleDeleteInventory(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		if err := db.DeleteInventory(r.Context(), pool, id); err != nil {
+			slog.Error("delete inventory", "id", id, "err", err)
+			writeError(w, http.StatusNotFound, "inventory not found")
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 

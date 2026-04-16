@@ -4,6 +4,15 @@ All notable changes to TrueState are documented here.
 
 ## [Unreleased]
 
+### 2026-04-16 (inventory list stats + delete + pagination)
+
+- `internal/db/inventory.go` — added `InventoryWithStats` struct; `ListInventoriesWithStats` lateral-join query (package count + most-recent evaluation summary per inventory); `DeleteInventory` (cascades to packages, evaluations, findings, drift_items)
+- `backend/internal/api/handler.go` — `GET /api/v1/inventories` now returns `[]InventoryWithStats`; new `DELETE /api/v1/inventories/{id}` endpoint
+- `ui/src/api/client.ts` — added `InventoryWithStats` type; `deleteInventory` API call
+- `ui/src/pages/InventoryList.tsx` — split hosts/goldens into sections; new columns: Packages count, Findings (linked to last eval, colour-coded), Last Evaluated date
+- `ui/src/pages/InventoryDetail.tsx` — packages search (name/version); package table pagination (100/page); inline delete with confirm/cancel flow (redirects to list on success)
+- `ui/src/pages/EvaluationDetail.tsx` — findings table pagination (100/page); page resets on filter changes
+
 ### 2026-04-16 (Proxmox platform mapping + UI filters)
 
 - `internal/db/assertion.go` — added `GetAssertionsForPackageOnPlatforms`: queries assertions across multiple platforms in one query (`platform = ANY($3)`); `GetAssertionsForPackage` now delegates to it

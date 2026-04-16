@@ -66,6 +66,14 @@ export interface EvaluationSummary {
   evaluated_at: string
 }
 
+export interface InventoryWithStats extends Inventory {
+  package_count: number
+  last_eval_id?: string
+  last_evaluated_at?: string
+  last_finding_count: number
+  last_drift_count: number
+}
+
 export interface SourceStatus {
   source: SourceID
   last_sync_at?: string
@@ -88,8 +96,12 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  listInventories: () => req<Inventory[]>('/inventories'),
+  listInventories: () => req<InventoryWithStats[]>('/inventories'),
   getInventory: (id: string) => req<Inventory>(`/inventories/${id}`),
+  deleteInventory: (id: string) =>
+    fetch(`${BASE}/inventories/${id}`, { method: 'DELETE' }).then((r) => {
+      if (!r.ok && r.status !== 204) throw new Error(`HTTP ${r.status}`)
+    }),
   listEvaluations: (inventoryId: string) =>
     req<EvaluationSummary[]>(`/inventories/${inventoryId}/evaluations`),
   runEvaluation: (inventoryId: string) =>

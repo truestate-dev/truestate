@@ -3,6 +3,8 @@ import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { api, Finding, DriftItem, AssertionStatus, CVSSSeverity } from '../api/client'
 
+const FINDINGS_PAGE_SIZE = 100
+
 const statusStyle: Record<AssertionStatus, string> = {
   fixed: 'bg-amber-100 text-amber-800',
   affected: 'bg-red-100 text-red-800',
@@ -126,6 +128,7 @@ export default function EvaluationDetail() {
   const [activeStatuses, setActiveStatuses] = useState<Set<AssertionStatus>>(new Set())
   const [driftOnly, setDriftOnly] = useState(false)
   const [search, setSearch] = useState('')
+  const [findingsPage, setFindingsPage] = useState(0)
 
   const { data: ev, isLoading, error } = useQuery({
     queryKey: ['evaluation', id],
@@ -182,6 +185,7 @@ export default function EvaluationDetail() {
       next.has(s) ? next.delete(s) : next.add(s)
       return next
     })
+    setFindingsPage(0)
   }
 
   function toggleStatus(s: AssertionStatus) {
@@ -190,6 +194,7 @@ export default function EvaluationDetail() {
       next.has(s) ? next.delete(s) : next.add(s)
       return next
     })
+    setFindingsPage(0)
   }
 
   const filtersActive =
@@ -252,6 +257,7 @@ export default function EvaluationDetail() {
                 setActiveStatuses(new Set())
                 setDriftOnly(false)
                 setSearch('')
+                setFindingsPage(0)
               }}
               className="text-xs text-slate-400 hover:text-slate-600"
             >
@@ -315,26 +321,52 @@ export default function EvaluationDetail() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                {['Severity', 'Package', 'Installed', 'CVE', 'Status', 'Fixed in', 'Source', ''].map((h) => (
-                  <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filtered.map((f, i) => <FindingRow key={i} f={f} />)}
-            </tbody>
-          </table>
-          {filtered.length === 0 && allFindings.length === 0 && (
-            <p className="text-center text-green-600 py-10 font-medium">No vulnerabilities found.</p>
-          )}
-          {filtered.length === 0 && allFindings.length > 0 && (
-            <p className="text-center text-slate-400 py-10">No findings match the current filters.</p>
-          )}
-        </div>
+        {(() => {
+          const pageCount = Math.ceil(filtered.length / FINDINGS_PAGE_SIZE)
+          const page = Math.min(findingsPage, Math.max(0, pageCount - 1))
+          const pageSlice = filtered.slice(page * FINDINGS_PAGE_SIZE, (page + 1) * FINDINGS_PAGE_SIZE)
+          return (
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    {['Severity', 'Package', 'Installed', 'CVE', 'Status', 'Fixed in', 'Source', ''].map((h) => (
+                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {pageSlice.map((f, i) => <FindingRow key={i} f={f} />)}
+                </tbody>
+              </table>
+              {filtered.length === 0 && allFindings.length === 0 && (
+                <p className="text-center text-green-600 py-10 font-medium">No vulnerabilities found.</p>
+              )}
+              {filtered.length === 0 && allFindings.length > 0 && (
+                <p className="text-center text-slate-400 py-10">No findings match the current filters.</p>
+              )}
+              {pageCount > 1 && (
+                <div className="flex items-center justify-between px-4 py-2 border-t border-slate-100 bg-slate-50 text-xs text-slate-500">
+                  <span>
+                    {page * FINDINGS_PAGE_SIZE + 1}–{Math.min((page + 1) * FINDINGS_PAGE_SIZE, filtered.length)} of {filtered.length}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setFindingsPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      className="px-2 py-1 rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100"
+                    >← Prev</button>
+                    <button
+                      onClick={() => setFindingsPage((p) => Math.min(pageCount - 1, p + 1))}
+                      disabled={page >= pageCount - 1}
+                      className="px-2 py-1 rounded border border-slate-200 disabled:opacity-40 hover:bg-slate-100"
+                    >Next →</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </section>
 
       {/* Drift panel */}
