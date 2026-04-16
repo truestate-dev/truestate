@@ -128,10 +128,5 @@ func computeDrift(host, golden []model.Package) []model.DriftItem {
 	return items
 }
 
-// versionGTE returns true if installed >= fixed using a simple lexicographic
-// comparison. For proper Debian epoch:upstream-revision comparison, this
-// should be replaced with a dpkg-version-aware comparator.
-// TODO: replace with proper Debian version comparison (dpkg algorithm).
-func versionGTE(installed, fixed string) bool {
-	return installed >= fixed
-}
+// versionGTE is implemented in version.go using the proper dpkg
+// epoch:upstream-revision comparison algorithm (Debian Policy §5.6.12).

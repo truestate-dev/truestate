@@ -26,3 +26,12 @@ All notable changes to TrueState are documented here.
 - Fixed NULL scan panic: SourceStatus.LastSyncAt changed to *time.Time
 - Fixed NOT NULL violation: nil Metadata map defaulted to empty map on inventory insert
 - End-to-end test passed: inventory creation, relations, evaluate endpoint, drift detection
+
+### 2026-04-16 (version comparison)
+
+- Implemented proper Debian version comparison (dpkg Policy §5.6.12)
+  - epoch:upstream-revision format
+  - alternating non-digit/digit run algorithm
+  - tilde pre-release ordering (1.0~rc1 < 1.0)
+  - correct numeric comparison (1.10 > 1.9)
+- 25 test cases covering epochs, tildes, revisions, real Ubuntu/Debian versions
