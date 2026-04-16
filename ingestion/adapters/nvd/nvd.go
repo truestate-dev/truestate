@@ -28,7 +28,7 @@ import (
 
 const (
 	apiBase      = "https://services.nvd.nist.gov/rest/json/cves/2.0"
-	pageSize     = 2000
+	pageSize     = 500
 	sleepNoKey   = 6200 * time.Millisecond // ~5 req/30s
 	sleepWithKey = 700 * time.Millisecond  // ~50 req/30s
 )
@@ -89,7 +89,7 @@ func Fetch(ctx context.Context) ([]db.CVSSRecord, error) {
 		slog.Info("nvd: no API key — rate limited to 5 req/30s; set NVD_API_KEY to speed up")
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 120 * time.Second}
 	var records []db.CVSSRecord
 	startIndex := 0
 	total := -1
@@ -115,9 +115,10 @@ func Fetch(ctx context.Context) ([]db.CVSSRecord, error) {
 			return nil, fmt.Errorf("nvd: fetch page %d: %w", page, err)
 		}
 
-		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == 429 {
+		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == 429 ||
+			resp.StatusCode == http.StatusServiceUnavailable {
 			resp.Body.Close()
-			slog.Warn("nvd: rate limited — backing off 35s", "page", page)
+			slog.Warn("nvd: backing off 35s", "page", page, "status", resp.StatusCode)
 			select {
 			case <-time.After(35 * time.Second):
 			case <-ctx.Done():
