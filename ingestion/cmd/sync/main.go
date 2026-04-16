@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -48,17 +49,17 @@ func syncDebian(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 
-	for _, v := range result.Vulnerabilities {
-		if err := db.UpsertVulnerability(ctx, pool, v); err != nil {
-			slog.Warn("upsert vulnerability", "cve", v.CVEID, "err", err)
-		}
-	}
-	for _, a := range result.Assertions {
-		if _, err := db.UpsertAssertion(ctx, pool, a); err != nil {
-			slog.Warn("upsert assertion", "cve", a.CVEID, "pkg", a.PackageName, "err", err)
-		}
+	slog.Info("debian: writing vulnerabilities", "count", len(result.Vulnerabilities))
+	if err := db.BulkUpsertVulnerabilities(ctx, pool, result.Vulnerabilities); err != nil {
+		return fmt.Errorf("debian: bulk upsert vulns: %w", err)
 	}
 
+	slog.Info("debian: writing assertions", "count", len(result.Assertions))
+	if err := db.BulkUpsertAssertions(ctx, pool, result.Assertions); err != nil {
+		return fmt.Errorf("debian: bulk upsert assertions: %w", err)
+	}
+
+	slog.Info("debian: sync complete", "assertions", len(result.Assertions))
 	return db.UpdateSourceStatus(ctx, pool, model.SourceStatus{
 		Source:      model.SourceDebian,
 		RecordCount: len(result.Assertions),
@@ -71,17 +72,17 @@ func syncUbuntu(ctx context.Context, pool *pgxpool.Pool) error {
 		return err
 	}
 
-	for _, v := range result.Vulnerabilities {
-		if err := db.UpsertVulnerability(ctx, pool, v); err != nil {
-			slog.Warn("upsert vulnerability", "cve", v.CVEID, "err", err)
-		}
-	}
-	for _, a := range result.Assertions {
-		if _, err := db.UpsertAssertion(ctx, pool, a); err != nil {
-			slog.Warn("upsert assertion", "cve", a.CVEID, "pkg", a.PackageName, "err", err)
-		}
+	slog.Info("ubuntu: writing vulnerabilities", "count", len(result.Vulnerabilities))
+	if err := db.BulkUpsertVulnerabilities(ctx, pool, result.Vulnerabilities); err != nil {
+		return fmt.Errorf("ubuntu: bulk upsert vulns: %w", err)
 	}
 
+	slog.Info("ubuntu: writing assertions", "count", len(result.Assertions))
+	if err := db.BulkUpsertAssertions(ctx, pool, result.Assertions); err != nil {
+		return fmt.Errorf("ubuntu: bulk upsert assertions: %w", err)
+	}
+
+	slog.Info("ubuntu: sync complete", "assertions", len(result.Assertions))
 	return db.UpdateSourceStatus(ctx, pool, model.SourceStatus{
 		Source:      model.SourceUbuntu,
 		RecordCount: len(result.Assertions),

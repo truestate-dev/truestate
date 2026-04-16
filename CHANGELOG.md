@@ -35,3 +35,20 @@ All notable changes to TrueState are documented here.
   - tilde pre-release ordering (1.0~rc1 < 1.0)
   - correct numeric comparison (1.10 > 1.9)
 - 25 test cases covering epochs, tildes, revisions, real Ubuntu/Debian versions
+
+### 2026-04-16 (performance + Ubuntu fix)
+
+- Replaced single-row assertion upserts with CopyFrom+temp table bulk upsert (247k rows in 14s vs 2+ hours)
+- Added BulkUpsertVulnerabilities using pgx SendBatch (2000-row batches)
+- Fixed Ubuntu adapter: total_results field name, reduced page limit to 100 (API rejects >100)
+
+### 2026-04-16 (Ubuntu OVAL rewrite)
+
+- Replaced Ubuntu JSON API adapter with OVAL XML bulk file ingestion
+  - Source: security-metadata.canonical.com/oval/com.ubuntu.<release>.usn.oval.xml.bz2
+  - Covers focal, jammy, noble (6.25M assertions across 3 releases)
+- Fixed CVE extraction: now reads `<reference source="CVE" ref_id="...">` attributes
+- Fixed package extraction: descriptions list packages as `pkgname - version` on one
+  space-separated line after "following package versions:"; regex now parses correctly
+- Added DISTINCT ON deduplication in bulk upsert SQL to handle same package/CVE appearing
+  in multiple USN definitions (ESM vs main channel variants)
