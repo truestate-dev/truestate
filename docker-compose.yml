@@ -55,3 +55,5 @@ services:
 
 volumes:
   db_data:
+    external: true
+    name: srvadm_db_data
