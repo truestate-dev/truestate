@@ -28,9 +28,10 @@ TrueState is a Go + React/TypeScript vulnerability and drift intelligence tool f
 
 ## Gitea
 
-- Org: `truestate`
-- Repo: `truestate/truestate`
-- URL: `http://gitea.local.vjinx.de:3000/truestate/truestate`
+- Org: `truestate-dev`
+- Repo: `truestate-dev/truestate`
+- Gitea: `http://gitea.local.vjinx.de:3000/truestate-dev/truestate`
+- GitHub: `https://github.com/truestate-dev/truestate`
 
 ## Core domains (stable)
 
