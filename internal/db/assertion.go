@@ -145,12 +145,20 @@ func UpsertAssertion(ctx context.Context, pool *pgxpool.Pool, a model.Assertion)
 // GetAssertionsForPackage returns all assertions for a package on a given platform/release.
 func GetAssertionsForPackage(ctx context.Context, pool *pgxpool.Pool,
 	pkg, platform, release string) ([]model.Assertion, error) {
+	return GetAssertionsForPackageOnPlatforms(ctx, pool, pkg, release, []string{platform})
+}
+
+// GetAssertionsForPackageOnPlatforms returns assertions for a package across multiple
+// platforms on the same release. Used to query Debian assertions as a fallback for
+// derivative platforms (e.g. Proxmox VE = Debian + PVE packages).
+func GetAssertionsForPackageOnPlatforms(ctx context.Context, pool *pgxpool.Pool,
+	pkg, release string, platforms []string) ([]model.Assertion, error) {
 
 	rows, err := pool.Query(ctx, `
 		SELECT id, source, cve_id, package_name, platform, release, status, fixed_version, fetched_at
 		FROM assertions
-		WHERE package_name = $1 AND platform = $2 AND release = $3
-		ORDER BY source, cve_id`, pkg, platform, release)
+		WHERE package_name = $1 AND release = $2 AND platform = ANY($3)
+		ORDER BY source, cve_id`, pkg, release, platforms)
 	if err != nil {
 		return nil, err
 	}

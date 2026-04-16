@@ -45,10 +45,19 @@ func Evaluate(ctx context.Context, pool *pgxpool.Pool, inventoryID string) (*mod
 		}
 	}
 
+	// Proxmox VE is Debian-based. When evaluating a Proxmox host, also query
+	// Debian assertions for the same release (e.g. bookworm) so that all base
+	// system packages are covered. PVE-specific packages with no Debian equivalent
+	// will simply have no assertions, which is correct.
+	platforms := []string{string(inv.Platform)}
+	if inv.Platform == model.PlatformProxmox {
+		platforms = append(platforms, string(model.PlatformDebian))
+	}
+
 	// Match each package in the inventory against stored assertions.
 	for _, pkg := range inv.Packages {
-		assertions, err := db.GetAssertionsForPackage(ctx, pool,
-			pkg.Name, string(inv.Platform), inv.Release)
+		assertions, err := db.GetAssertionsForPackageOnPlatforms(ctx, pool,
+			pkg.Name, inv.Release, platforms)
 		if err != nil {
 			return nil, fmt.Errorf("evaluate: get assertions for %s: %w", pkg.Name, err)
 		}

@@ -4,6 +4,19 @@ All notable changes to TrueState are documented here.
 
 ## [Unreleased]
 
+### 2026-04-16 (Proxmox platform mapping + UI filters)
+
+- `internal/db/assertion.go` — added `GetAssertionsForPackageOnPlatforms`: queries assertions across multiple platforms in one query (`platform = ANY($3)`); `GetAssertionsForPackage` now delegates to it
+- `internal/engine/engine.go` — Proxmox platform fallback: when `platform=proxmox`, also queries `platform=debian` assertions for the same release codename (PVE 8.x = Debian bookworm, etc.), giving full CVE coverage for base system packages on PVE hosts
+- `ui/src/pages/EvaluationDetail.tsx` — findings filter bar:
+  - Text search on package name or CVE ID
+  - Severity toggles (CRITICAL / HIGH / MEDIUM / LOW / Unscored) — multi-select chips
+  - Status toggles (affected / fixed / under_review / not_affected) — multi-select chips
+  - Drift-only toggle
+  - Live counter: "Showing N of M findings"
+  - "Clear filters" shortcut link
+  - All filtering is client-side (no extra API calls)
+
 ### 2026-04-16 (CVSS severity enrichment)
 
 - Migration 003: added `cvss_score FLOAT`, `cvss_severity TEXT`, `cvss_vector TEXT` to `vulnerabilities`; added `nvd` source_status row
